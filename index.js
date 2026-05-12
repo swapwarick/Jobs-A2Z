@@ -10,6 +10,10 @@ import { scanPortals } from './scan.js';
 import { marked } from 'marked';
 import { chromium } from 'playwright';
 
+// Persistent profile file — gitignored, stores session between runs
+const PROFILE_PATH = './user-profile.json';
+const AUTO_SCAN_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
+
 // Top-level global state variables
 let cv = '';
 const cvPath = './cv.md';
@@ -18,6 +22,9 @@ let activeTab = 'eval'; // 'eval', 'resume', 'cv', 'logs'
 let appLogs = [];
 let isScanning = false;
 let focusedPanel = 'list'; // 'list' or 'content'
+let nextScanAt = null;    // Date object for next scheduled auto-scan
+let autoScanTimer = null; // setInterval handle
+let countdownTicker = null; // setInterval for countdown display
 let agent = null;
 let globalUserName = '';
 let globalUserDesignation = '';
@@ -92,6 +99,27 @@ const rl = readline.createInterface({
 });
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
+// Save user profile to disk so onboarding is skipped on next launch
+function saveProfile() {
+  const profile = {
+    userName: globalUserName,
+    userDesignation: globalUserDesignation,
+    targetRole: globalTargetRole,
+    savedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(PROFILE_PATH, JSON.stringify(profile, null, 2), 'utf8');
+}
+
+// Load existing profile from disk
+function loadProfile() {
+  if (fs.existsSync(PROFILE_PATH)) {
+    try {
+      return JSON.parse(fs.readFileSync(PROFILE_PATH, 'utf8'));
+    } catch (_) {}
+  }
+  return null;
+}
+
 async function initSetup() {
   console.clear();
   console.log("=================================================================");
@@ -106,34 +134,62 @@ async function initSetup() {
     fs.writeFileSync(cvPath, cv);
   }
 
-  // Question 1: User Name
-  let userName = '';
-  while (!userName.trim()) {
-    userName = await question("👤 Enter your Name: ");
-  }
-  globalUserName = userName.trim();
+  // Check for saved profile — skip onboarding if found
+  const saved = loadProfile();
+  if (saved && saved.userName && saved.userDesignation && saved.targetRole) {
+    globalUserName = saved.userName;
+    globalUserDesignation = saved.userDesignation;
+    globalTargetRole = saved.targetRole;
+    console.log(`✅ Loaded saved profile for: ${globalUserName} (${globalUserDesignation})`);
+    console.log(`🎯 Resuming hunt for: "${globalTargetRole}"`);
+    console.log(`   Saved on: ${new Date(saved.savedAt).toLocaleString()}`);
+    console.log(`\n   Press [N] inside the dashboard to change your target role.`);
+  } else {
+    // ── First-time onboarding ──
 
-  // Question 2: Designation
-  let userDesig = '';
-  while (!userDesig.trim()) {
-    userDesig = await question("💼 Enter your Current Designation/Headline: ");
-  }
-  globalUserDesignation = userDesig.trim();
+    // Question 1: User Name
+    let userName = '';
+    while (!userName.trim()) {
+      userName = await question("👤 Enter your Name: ");
+    }
+    globalUserName = userName.trim();
 
-  // Question 3: Append to Base Resume
-  console.log(`\n📄 Base Profile loaded from ./cv.md (${cv.length} characters)`);
-  let customAdditions = await question("✍️  Append specific focus/skills to resume? (Leave blank to keep base CV): ");
-  if (customAdditions.trim()) {
-    cv += `\n\n[Additions by ${globalUserName} - ${globalUserDesignation}]: ${customAdditions.trim()}`;
-    fs.writeFileSync(cvPath, cv);
-    console.log("✅ Custom criteria added to ./cv.md successfully!");
+    // Question 2: Designation
+    let userDesig = '';
+    while (!userDesig.trim()) {
+      userDesig = await question("💼 Enter your Current Designation/Headline: ");
+    }
+    globalUserDesignation = userDesig.trim();
+
+    // Question 3: Append to Base Resume
+    console.log(`\n📄 Base Profile loaded from ./cv.md (${cv.length} characters)`);
+    let customAdditions = await question("✍️  Append specific focus/skills to resume? (Leave blank to keep base CV): ");
+    if (customAdditions.trim()) {
+      cv += `\n\n[Additions by ${globalUserName} - ${globalUserDesignation}]: ${customAdditions.trim()}`;
+      fs.writeFileSync(cvPath, cv);
+      console.log("✅ Custom criteria added to ./cv.md successfully!");
+    }
+
+    // Question 4: Target Role
+    console.log("\n🎯 Target Scrape Arc Pipeline Configuration");
+    let targetRole = '';
+    while (!targetRole.trim()) {
+      targetRole = await question("🔍 Enter specific Job Role to hunt: ");
+    }
+    globalTargetRole = targetRole.trim();
+
+    // Save profile for future runs
+    saveProfile();
+    console.log(`\n💾 Profile saved — won't ask again on next launch!`);
   }
 
-  // Question 4: Gemini CLI Auth
-  console.log("\n🔐 Initializing Google Gemini Agentic Cloud Authentication...");
+  rl.close();
+
+  // Gemini CLI Auth check
+  console.log("\n🔐 Verifying AI cloud authentication...");
   const credPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
-  if (!process.env.GEMINI_API_KEY && !fs.existsSync(credPath)) {
-    console.log("🔑 Handshake requires OAuth token. Initiating Gemini CLI Auth...");
+  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY && !process.env.GROQ_API_KEY && !fs.existsSync(credPath)) {
+    console.log("🔑 No API key found. Initiating Gemini CLI Auth...");
     try {
       execSync('npx @google/gemini-cli auth', { stdio: 'inherit' });
       console.log("✅ Cloud agent credentials synced successfully!");
@@ -142,26 +198,14 @@ async function initSetup() {
       process.exit(1);
     }
   } else {
-    console.log("✅ Verified local OAuth / Environment Key access for Gemini.");
+    console.log("✅ AI provider credentials verified.");
   }
-
-  // Question 5: Target Role to actively scrape
-  console.log("\n🎯 Target Scrape Arc Pipeline Configuration");
-  let targetRole = '';
-  while (!targetRole.trim()) {
-    targetRole = await question("🔍 Enter specific Job Role to hunt: ");
-  }
-  globalTargetRole = targetRole.trim();
-
-  rl.close();
 
   // Rewrite portals.yml dynamically so all regional portal queries match precisely
   const file = fs.readFileSync('./portals.yml', 'utf8');
   const config = yaml.parse(file);
   if (config && config.portals) {
-    config.portals.forEach(p => {
-      p.searchQuery = globalTargetRole;
-    });
+    config.portals.forEach(p => { p.searchQuery = globalTargetRole; });
     fs.writeFileSync('./portals.yml', yaml.stringify(config));
     portalsConfig = config.portals;
     console.log(`✅ Configured live scrapers on ${config.portals.length} regional portals targeting: "${globalTargetRole}"`);
@@ -169,14 +213,15 @@ async function initSetup() {
 
   // Instantiate Cloud Agent
   agent = new CareerAgent();
-  pushLog(`System initialized by user ${globalUserName} hunting for ${globalTargetRole}.`);
+  pushLog(`Session started: ${globalUserName} hunting for "${globalTargetRole}".`);
 
-  console.log("\n🚀 Launching visual Master TUI Dashboard in 2 seconds...");
+  console.log("\n🚀 Launching Master TUI Dashboard in 2 seconds...");
   await new Promise(res => setTimeout(res, 2000));
 
   // Invoke Main Blessed Application Loop
   startDashboard();
 }
+
 
 function startDashboard() {
   // Initialize UI Screen
@@ -306,12 +351,35 @@ function startDashboard() {
     left: 0,
     width: '100%',
     height: 2,
-    content: '{center}{cyan-bg}{black-fg}{bold} Keybinds: {/} [←/→] Switch  [↑/↓] Select  [Enter] Eval  [R] Resume  [P] PDF  [C] Contact/Email  [A] Auto-Pilot Arc  [S] Rescan  [Q] Exit {/center}',
+    content: '',
     tags: true,
-    style: {
-      bg: 'black'
-    }
+    style: { bg: 'black' }
   });
+
+  // Update status bar with countdown
+  function updateStatusBar() {
+    let countdown = '';
+    if (nextScanAt && !isScanning) {
+      const msLeft = nextScanAt - Date.now();
+      if (msLeft > 0) {
+        const h = Math.floor(msLeft / 3600000);
+        const m = Math.floor((msLeft % 3600000) / 60000);
+        const s = Math.floor((msLeft % 60000) / 1000);
+        countdown = `  {gray-fg}⏱ Next scan: ${h}h ${m}m ${s}s{/}`;
+      }
+    } else if (isScanning) {
+      countdown = `  {yellow-fg}⚡ Scanning now...{/}`;
+    }
+    statusBar.setContent(
+      `{center}{cyan-bg}{black-fg}{bold} Keys: {/} [←/→] Panel  [↑/↓] Nav  [Enter] Eval  [R] Resume  [P] PDF  [C] Contact  [A] Auto-Arc  [S] Scan  [N] New Role  [Q] Exit ${countdown}{/center}`
+    );
+    if (screen) screen.render();
+  }
+
+  // Countdown ticker — updates every second
+  countdownTicker = setInterval(updateStatusBar, 1000);
+  updateStatusBar();
+
 
   // Wire events & rendering
   list.on('focus', () => { focusedPanel = 'list'; listBox.style.border.fg = 'cyan'; rightBox.style.border.fg = 'blue'; screen.render(); });
@@ -556,6 +624,49 @@ function startDashboard() {
   screen.key(['4'], () => { activeTab = 'logs'; updateRightPanel(); setFocusPanel('content'); });
 
   screen.key(['s', 'S'], () => { if (!isScanning) startBackgroundScan(); });
+
+  // [N] hotkey: change target role on-the-fly without restarting
+  screen.key(['n', 'N'], () => {
+    // Show an inline prompt box to change the role
+    const promptBox = blessed.prompt({
+      parent: screen,
+      top: 'center',
+      left: 'center',
+      width: '60%',
+      height: 7,
+      label: ' {bold}{cyan-fg}🎯 Change Target Job Role{/} ',
+      tags: true,
+      border: { type: 'line' },
+      style: { border: { fg: 'cyan' }, fg: 'white', bg: 'black' }
+    });
+    promptBox.input('Enter new Job Role to hunt:', '', async (err, newRole) => {
+      if (!err && newRole && newRole.trim()) {
+        globalTargetRole = newRole.trim();
+        // Update portals.yml
+        try {
+          const file = fs.readFileSync('./portals.yml', 'utf8');
+          const config = yaml.parse(file);
+          if (config && config.portals) {
+            config.portals.forEach(p => { p.searchQuery = globalTargetRole; });
+            fs.writeFileSync('./portals.yml', yaml.stringify(config));
+            portalsConfig = config.portals;
+          }
+        } catch (_) {}
+        // Save updated profile
+        saveProfile();
+        // Update header
+        header.setContent(`{center}{bold}{cyan-fg}⚡ AGENT-HIRE{/} : Autonomous Career-Ops Interface{/bold}{/center}\n{center}{yellow-fg}User: ${globalUserName} (${globalUserDesignation}){/}  |  {green-fg}Target: ${globalTargetRole}{/}  |  {magenta-fg}Market: India{/}{/center}`);
+        pushLog(`Target role changed to: "${globalTargetRole}". Triggering fresh scan...`);
+        stateJobs = [];
+        updateJobList();
+        startBackgroundScan();
+      }
+      promptBox.destroy();
+      setFocusPanel(focusedPanel);
+    });
+    screen.render();
+  });
+
   screen.key(['pageup', 'S-up'], () => { contentBox.scroll(-3); screen.render(); });
   screen.key(['pagedown', 'S-down'], () => { contentBox.scroll(3); screen.render(); });
 
@@ -710,7 +821,9 @@ function setFocusPanel(panel) {
   if (screen) screen.render();
 }
 
+// Background Scan Executor
 async function startBackgroundScan() {
+  if (isScanning) return;
   isScanning = true;
   pushLog(`Initiating regional web scrapers matching target: "${globalTargetRole}"...`);
   updateJobList();
@@ -720,17 +833,25 @@ async function startBackgroundScan() {
     const jobs = await scanPortals(portalsConfig, (logMsg) => {
       pushLog(`[Scraper] ${logMsg}`);
     });
-    
     stateJobs = jobs;
     pushLog(`Scraping complete. Retrieved ${jobs.length} unique matched opportunities.`);
   } catch (error) {
     pushLog(`Scraping loop error: ${error.message}`);
   } finally {
     isScanning = false;
+    // Schedule next automatic scan
+    nextScanAt = new Date(Date.now() + AUTO_SCAN_INTERVAL_MS);
+    pushLog(`Next automatic scan scheduled at: ${nextScanAt.toLocaleTimeString()}`);
+
+    // Clear old timer and set fresh one
+    if (autoScanTimer) clearTimeout(autoScanTimer);
+    autoScanTimer = setTimeout(() => {
+      pushLog('⏰ 4-hour auto-scan interval triggered. Refreshing job feeds...');
+      startBackgroundScan();
+    }, AUTO_SCAN_INTERVAL_MS);
+
     updateJobList();
-    if (list && stateJobs.length > 0) {
-      list.select(0);
-    }
+    if (list && stateJobs.length > 0) { list.select(0); }
     updateRightPanel();
     setFocusPanel('list');
   }
@@ -738,3 +859,4 @@ async function startBackgroundScan() {
 
 // Call start sequence explicitly
 initSetup();
+

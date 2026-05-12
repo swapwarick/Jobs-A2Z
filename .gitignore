@@ -21,8 +21,9 @@ node_modules/
 .env.*
 oauth_creds.json
 
-# User base profiles and Generated artifacts
+# User base profiles, session state, and Generated artifacts
 cv.md
+user-profile.json
 *.pdf
 outbox/
 test.json
