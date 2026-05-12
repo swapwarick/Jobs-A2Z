@@ -55,6 +55,15 @@ It scrapes live listings, evaluates each role against your CV, drafts ATS-optimi
 
 ---
 
+## 📸 Live Dashboard Screenshot
+
+The real TUI running live — scraping from Naukri, LinkedIn India, Instahyre, and Wellfound with a personalized target role:
+
+![Live Dashboard](docs/screenshots/screenshot_dashboard.png)
+
+---
+
+
 ## 🚀 Key Features
 
 | Feature | Description |
