@@ -1,6 +1,6 @@
-# ⚡ Jobs-A2Z — Autonomous Career-Ops Agent
+# ⚡ Jobs-A2Z — Agentic Platform to Find the Right Jobs
 
-> An enterprise-grade, agentic AI platform that automates the entire Indian tech job hunt — from live scraping to personalized outreach — powered by a **pluggable AI brain** (Gemini · OpenAI · Groq · Ollama) and **multi-provider SMTP dispatch** (Gmail · Outlook · Yahoo · SendGrid · Mailgun · Zoho).
+> An enterprise-grade, agentic AI platform that finds, evaluates, and applies to the right jobs for you — powered by a **pluggable AI brain** (Gemini · OpenAI · Groq · Ollama) and **multi-provider SMTP dispatch** (Gmail · Outlook · Yahoo · SendGrid · Mailgun · Zoho).
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
 [![Gemini](https://img.shields.io/badge/Gemini-REST%20%2F%20CLI-blue?logo=google)](https://aistudio.google.com/)
