@@ -55,6 +55,42 @@ It scrapes live listings, evaluates each role against your CV, drafts ATS-optimi
 
 ---
 
+## 📸 How It Works — Visual Walkthrough
+
+> *Demo profile: **Arjun Sharma**, Senior ML Engineer, hunting for **Senior MLOps Engineer** roles across Indian unicorns.*
+
+### Step 1 — Smart Startup (Skips Onboarding After First Run)
+
+On first launch you fill in your name, designation, and target role once. Every subsequent `node index.js` detects your saved profile and jumps straight to the dashboard.
+
+![Onboarding Screen](docs/screenshots/onboarding.png)
+
+---
+
+### Step 2 — Live Jobs Dashboard (4-Portal Real-Time Scraping)
+
+The left panel populates with live opportunities scraped from **Naukri, LinkedIn India, Instahyre,** and **Wellfound** — all specifically matching your target role. Press `Enter` to trigger AI gap-analysis.
+
+![Dashboard with Jobs](docs/screenshots/dashboard.png)
+
+---
+
+### Step 3 — AI Resume Tailoring + ATS PDF Export
+
+Press `[R]` to have the AI rewrite your CV specifically for the selected job. Press `[P]` to instantly render it into a professional ATS-optimized PDF via headless Chromium.
+
+![Tailored Resume and PDF Export](docs/screenshots/resume.png)
+
+---
+
+### Step 4 — Recruiter Contact Discovery + Automated Cold Outreach
+
+Press `[C]` to discover the hiring manager's contact, draft a personalized cold email, and dispatch it over SMTP with your PDF attached. Press `[A]` to run all steps autonomously in one keystroke.
+
+![Cold Email Outreach](docs/screenshots/outreach.png)
+
+---
+
 ## 🚀 Key Features
 
 | Feature | Description |
