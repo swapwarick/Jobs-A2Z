@@ -1,0 +1,17 @@
+portals:
+  - name: Naukri
+    url: https://www.naukri.com/
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: Instahyre
+    url: https://www.instahyre.com/
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: Wellfound India
+    url: https://wellfound.com/location/india
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: LinkedIn India
+    url: https://www.linkedin.com/jobs/
+    searchQuery: AI engineer and System administrator
+    location: India

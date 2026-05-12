@@ -1,0 +1,32 @@
+# Logs and Temporary Cache files
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+prompt-*.txt
+.agent-diaries/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+
+# Credentials and Local overrides
+.env
+.env.*
+oauth_creds.json
+
+# User base profiles and Generated artifacts
+cv.md
+*.pdf
+outbox/
+test.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
