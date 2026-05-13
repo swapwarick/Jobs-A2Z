@@ -3,6 +3,14 @@ portals:
     url: https://www.naukri.com/
     searchQuery: AI engineer and System administrator
     location: India
+  - name: LinkedIn India
+    url: https://www.linkedin.com/jobs/
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: Indeed India
+    url: https://in.indeed.com/jobs
+    searchQuery: AI engineer and System administrator
+    location: India
   - name: Instahyre
     url: https://www.instahyre.com/
     searchQuery: AI engineer and System administrator
@@ -11,7 +19,15 @@ portals:
     url: https://wellfound.com/location/india
     searchQuery: AI engineer and System administrator
     location: India
-  - name: LinkedIn India
-    url: https://www.linkedin.com/jobs/
+  - name: TimesJobs
+    url: https://www.timesjobs.com/
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: Shine
+    url: https://www.shine.com/
+    searchQuery: AI engineer and System administrator
+    location: India
+  - name: Hirist
+    url: https://www.hirist.tech/
     searchQuery: AI engineer and System administrator
     location: India

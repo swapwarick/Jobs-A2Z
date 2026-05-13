@@ -371,7 +371,7 @@ function startDashboard() {
       countdown = `  {yellow-fg}⚡ Scanning now...{/}`;
     }
     statusBar.setContent(
-      `{center}{cyan-bg}{black-fg}{bold} Keys: {/} [←/→] Panel  [↑/↓] Nav  [Enter] Eval  [R] Resume  [P] PDF  [C] Contact  [A] Auto-Arc  [S] Scan  [N] New Role  [Q] Exit ${countdown}{/center}`
+      `{center}{cyan-bg}{black-fg}{bold} Keys: {/} [←/→] Panel  [↑/↓] Nav  [Enter] Eval  [R] Resume  [P] PDF  [O] Open URL  [C] Contact  [A] Auto-Arc  [S] Scan  [N] New Role  [Q] Exit ${countdown}{/center}`
     );
     if (screen) screen.render();
   }
@@ -667,6 +667,17 @@ function startDashboard() {
     screen.render();
   });
 
+  // Action: Open job URL in default browser on 'O'
+  screen.key(['o', 'O'], () => {
+    if (stateJobs.length === 0) return;
+    const job = stateJobs[list.selected];
+    if (!job || !job.url || job.url.startsWith('http') === false) return;
+    const openCmd = process.platform === 'win32' ? `start "" "${job.url}"` :
+                    process.platform === 'darwin' ? `open "${job.url}"` : `xdg-open "${job.url}"`;
+    try { execSync(openCmd, { shell: true }); } catch (_) {}
+    pushLog(`Opened in browser: ${job.url}`);
+  });
+
   screen.key(['pageup', 'S-up'], () => { contentBox.scroll(-3); screen.render(); });
   screen.key(['pagedown', 'S-down'], () => { contentBox.scroll(3); screen.render(); });
 
@@ -833,8 +844,12 @@ async function startBackgroundScan() {
     const jobs = await scanPortals(portalsConfig, (logMsg) => {
       pushLog(`[Scraper] ${logMsg}`);
     });
-    stateJobs = jobs;
-    pushLog(`Scraping complete. Retrieved ${jobs.length} unique matched opportunities.`);
+    // Filter out jobs already evaluated in previous sessions
+    const newJobs = agent ? await agent.filterNewJobs(jobs) : jobs;
+    const skipped = jobs.length - newJobs.length;
+    if (skipped > 0) pushLog(`Deduplication: skipped ${skipped} already-seen listing(s).`);
+    stateJobs = newJobs.length > 0 ? newJobs : jobs; // fall back to full list if everything was seen
+    pushLog(`Scraping complete. Showing ${stateJobs.length} listings (${jobs.length} total scraped).`);
   } catch (error) {
     pushLog(`Scraping loop error: ${error.message}`);
   } finally {
