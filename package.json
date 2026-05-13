@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
     "@google/gemini-cli": "^0.41.2",
     "@google/genai": "^2.0.1",
     "@swapwarick_n/agent-diaries": "^1.0.4",

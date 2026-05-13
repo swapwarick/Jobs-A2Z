@@ -124,49 +124,13 @@ Create `cv.md` in the project root with your resume in Markdown format:
 
 > `cv.md` is gitignored and stays 100% local to your machine.
 
-### 5. Configure Environment Variables
-
-Create a `.env` file. Only fill in the providers you want — everything else auto-falls back:
-
-```env
-# ── AI PROVIDER (auto | groq | gemini | openai | claude | ollama) ──
-AI_PROVIDER=auto
-
-# Groq (FREE tier, ultra-fast) — https://console.groq.com/keys
-GROQ_API_KEY=your_groq_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
-
-# Google Gemini REST API — https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.0-flash
-
-# OpenAI GPT — https://platform.openai.com/api-keys
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
-
-# Ollama (local, offline, free) — https://ollama.com
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
-
-# ── EMAIL DISPATCH ─────────────────────────────────────────────────
-SMTP_PROVIDER=gmail
-SMTP_USER=your.email@gmail.com
-SMTP_PASS=your16charapppassword
-
-# ── CONTACT DISCOVERY (optional) ───────────────────────────────────
-HUNTER_API_KEY=
-APOLLO_API_KEY=
-```
-
----
-
-## ▶️ Running the Application
+### 5. Run it — the app sets up everything else interactively
 
 ```bash
 npm start
 ```
 
-You will be walked through a **4-step onboarding setup**:
+No `.env` file needed upfront. On first launch the app walks you through a setup wizard that asks for your AI provider key and saves it to `.env` automatically:
 
 ```
 ================================================================
@@ -178,13 +142,60 @@ You will be walked through a **4-step onboarding setup**:
 📄 Base Profile loaded from ./cv.md (4316 characters)
 ✍️  Append specific focus/skills to resume? (Leave blank to keep base CV):
 
-✅ AI provider credentials verified.
-
 🎯 Target Scrape Arc Pipeline Configuration
 🔍 Enter specific Job Role to hunt: Senior MLOps Engineer
 
+╔══════════════════════════════════════════════════╗
+║           🤖  AI PROVIDER SETUP                  ║
+╠══════════════════════════════════════════════════╣
+║  No API key found. Pick a provider to continue:  ║
+╚══════════════════════════════════════════════════╝
+
+  [1] Groq       FREE · ultra-fast LLaMA 3  ← recommended
+                 Key at: https://console.groq.com/keys
+
+  [2] Gemini     Free tier · Google's model
+                 Key at: https://aistudio.google.com/app/apikey
+
+  [3] OpenAI     GPT-4o · most capable (paid)
+                 Key at: https://platform.openai.com/api-keys
+
+  [4] Claude     Anthropic · strong reasoning (paid)
+                 Key at: https://console.anthropic.com/
+
+  [5] Ollama     100% local · offline · no key needed
+
+  [6] Gemini CLI OAuth browser login · no API key needed
+
+  Enter choice [1-6]: 1
+
+  🔑 Paste your Groq API key (gsk_...): gsk_xxxxxxxxxxxx
+
+  ✅ Groq key saved to .env — won't ask again next launch.
+
 ✅ Configured live scrapers on 8 regional portals targeting: "Senior MLOps Engineer"
 🚀 Launching Master TUI Dashboard in 2 seconds...
+```
+
+On subsequent runs the saved key is detected automatically and onboarding is skipped.
+
+**Advanced:** You can also pre-create a `.env` manually if you prefer — the wizard only triggers when no key is found:
+
+```env
+# ── AI PROVIDER (auto | groq | gemini | openai | claude | ollama) ──
+AI_PROVIDER=auto
+
+# Groq (FREE tier, ultra-fast) — https://console.groq.com/keys
+GROQ_API_KEY=your_groq_key_here
+
+# ── EMAIL DISPATCH (optional) ─────────────────────────────────────
+SMTP_PROVIDER=gmail
+SMTP_USER=your.email@gmail.com
+SMTP_PASS=your16charapppassword
+
+# ── CONTACT DISCOVERY (optional) ──────────────────────────────────
+HUNTER_API_KEY=
+APOLLO_API_KEY=
 ```
 
 ---
@@ -239,7 +250,7 @@ If SMTP credentials are not configured, the email payload is safely **spooled lo
 | **Groq LLaMA 3** | `groq` | 🚀 Fastest | **Free tier** | `GROQ_API_KEY` |
 | **Gemini REST API** | `gemini` | ⚡ Fast | Free / Pay-as-go | `GEMINI_API_KEY` |
 | **OpenAI GPT-4o** | `openai` | ⚡ Fast | Paid | `OPENAI_API_KEY` |
-| **Anthropic Claude** | `claude` | ⚡ Fast | Paid | `ANTHROPIC_API_KEY` + `npm i @anthropic-ai/sdk` |
+| **Anthropic Claude** | `claude` | ⚡ Fast | Paid | `ANTHROPIC_API_KEY` |
 | **Ollama (Local)** | `ollama` | Moderate | **100% Free** | Local install |
 | **Gemini CLI** | *(fallback)* | Slow | Free | OAuth session |
 

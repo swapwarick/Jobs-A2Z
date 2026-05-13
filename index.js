@@ -120,6 +120,101 @@ function loadProfile() {
   return null;
 }
 
+// Write or update a single key in .env (creates the file if missing)
+function writeEnvKey(key, value) {
+  const envPath = path.resolve('.env');
+  let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+  const regex = new RegExp(`^${key}=.*$`, 'm');
+  if (regex.test(content)) {
+    content = content.replace(regex, `${key}=${value}`);
+  } else {
+    if (content.length > 0 && !content.endsWith('\n')) content += '\n';
+    content += `${key}=${value}\n`;
+  }
+  fs.writeFileSync(envPath, content, 'utf8');
+  process.env[key] = value; // make available to current process immediately
+}
+
+// Interactive AI provider setup — runs during onboarding if no key is detected
+async function setupAiProvider() {
+  const geminiCLIPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
+  const hasKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY ||
+                 process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY ||
+                 process.env.AI_PROVIDER === 'ollama' ||
+                 fs.existsSync(geminiCLIPath);
+
+  if (hasKey) {
+    let active = 'Gemini CLI (OAuth)';
+    if (process.env.GROQ_API_KEY) active = 'Groq LLaMA 3';
+    else if (process.env.GEMINI_API_KEY) active = 'Gemini REST';
+    else if (process.env.OPENAI_API_KEY) active = 'OpenAI GPT';
+    else if (process.env.ANTHROPIC_API_KEY) active = 'Anthropic Claude';
+    else if (process.env.AI_PROVIDER === 'ollama') active = 'Ollama (Local)';
+    console.log(`\n✅ AI provider active: ${active}`);
+    return;
+  }
+
+  console.log("\n╔══════════════════════════════════════════════════╗");
+  console.log("║           🤖  AI PROVIDER SETUP                  ║");
+  console.log("╠══════════════════════════════════════════════════╣");
+  console.log("║  No API key found. Pick a provider to continue:  ║");
+  console.log("╚══════════════════════════════════════════════════╝\n");
+  console.log("  [1] Groq       FREE · ultra-fast LLaMA 3  ← recommended");
+  console.log("                 Key at: https://console.groq.com/keys\n");
+  console.log("  [2] Gemini     Free tier · Google's model");
+  console.log("                 Key at: https://aistudio.google.com/app/apikey\n");
+  console.log("  [3] OpenAI     GPT-4o · most capable (paid)");
+  console.log("                 Key at: https://platform.openai.com/api-keys\n");
+  console.log("  [4] Claude     Anthropic · strong reasoning (paid)");
+  console.log("                 Key at: https://console.anthropic.com/\n");
+  console.log("  [5] Ollama     100% local · offline · no key needed");
+  console.log("                 Install: https://ollama.com\n");
+  console.log("  [6] Gemini CLI OAuth browser login · no API key needed\n");
+
+  let choice = '';
+  while (!['1','2','3','4','5','6'].includes(choice.trim())) {
+    choice = await question("  Enter choice [1-6]: ");
+  }
+  choice = choice.trim();
+
+  // OAuth path — launch browser auth
+  if (choice === '6') {
+    console.log("\n🔐 Launching Gemini CLI OAuth — a browser window will open...");
+    try {
+      execSync('npx @google/gemini-cli auth', { stdio: 'inherit' });
+      console.log("✅ Gemini CLI authenticated successfully!");
+    } catch (e) {
+      console.log("⚠️  Auth failed or was skipped. Run 'node auth.js' to retry later.");
+    }
+    return;
+  }
+
+  // Ollama — no key, just confirm model name
+  if (choice === '5') {
+    const model = await question("  Ollama model name (press Enter for llama3): ");
+    writeEnvKey('OLLAMA_MODEL', model.trim() || 'llama3');
+    writeEnvKey('AI_PROVIDER', 'ollama');
+    console.log("✅ Ollama configured. Make sure `ollama serve` is running in another terminal.");
+    return;
+  }
+
+  const PROVIDERS = {
+    '1': { name: 'Groq',             envKey: 'GROQ_API_KEY',      hint: 'gsk_...' },
+    '2': { name: 'Google Gemini',    envKey: 'GEMINI_API_KEY',    hint: 'AIza...' },
+    '3': { name: 'OpenAI',           envKey: 'OPENAI_API_KEY',    hint: 'sk-...' },
+    '4': { name: 'Anthropic Claude', envKey: 'ANTHROPIC_API_KEY', hint: 'sk-ant-...' },
+  };
+
+  const p = PROVIDERS[choice];
+  let apiKey = '';
+  while (!apiKey.trim()) {
+    apiKey = await question(`\n  🔑 Paste your ${p.name} API key (${p.hint}): `);
+  }
+
+  writeEnvKey(p.envKey, apiKey.trim());
+  console.log(`\n  ✅ ${p.name} key saved to .env — won't ask again next launch.`);
+}
+
 async function initSetup() {
   console.clear();
   console.log("=================================================================");
@@ -183,23 +278,10 @@ async function initSetup() {
     console.log(`\n💾 Profile saved — won't ask again on next launch!`);
   }
 
-  rl.close();
+  // AI provider setup — runs interactively if no key is present in .env / process.env
+  await setupAiProvider();
 
-  // Gemini CLI Auth check
-  console.log("\n🔐 Verifying AI cloud authentication...");
-  const credPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
-  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY && !process.env.GROQ_API_KEY && !fs.existsSync(credPath)) {
-    console.log("🔑 No API key found. Initiating Gemini CLI Auth...");
-    try {
-      execSync('npx @google/gemini-cli auth', { stdio: 'inherit' });
-      console.log("✅ Cloud agent credentials synced successfully!");
-    } catch (error) {
-      console.error("❌ Authentication aborted/failed. System exiting.");
-      process.exit(1);
-    }
-  } else {
-    console.log("✅ AI provider credentials verified.");
-  }
+  rl.close();
 
   // Rewrite portals.yml dynamically so all regional portal queries match precisely
   const file = fs.readFileSync('./portals.yml', 'utf8');
