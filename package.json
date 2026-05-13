@@ -1,15 +1,16 @@
 {
-  "name": "project-989",
+  "name": "jobs-a2z",
   "version": "1.0.0",
+  "description": "Autonomous career-ops TUI: scrape Indian job portals, AI-evaluate, tailor resumes, and dispatch outreach.",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "auth": "node auth.js"
   },
-  "keywords": [],
+  "keywords": ["jobs", "career", "india", "ai", "tui", "resume"],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@google/gemini-cli": "^0.41.2",
     "@google/genai": "^2.0.1",

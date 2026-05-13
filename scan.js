@@ -1,5 +1,63 @@
 import { chromium } from 'playwright';
 
+const PORTAL_SELECTORS = {
+  Naukri:     { selector: 'a.title, a[href*="job-listings"], a[href*="-jobs?"]', urlCheck: 'job-listings' },
+  Instahyre:  { selector: 'a[href*="/job/"]', urlCheck: '/job/' },
+  LinkedIn:   { selector: 'a.base-card__full-link, a[href*="/jobs/view/"]', urlCheck: '/jobs/view/' },
+  Wellfound:  { selector: 'a[href*="/jobs/"]', urlCheck: '/jobs/' },
+  Indeed:     { selector: 'a[data-jk], a[href*="/viewjob"]', urlCheck: '/viewjob' },
+  TimesJobs:  { selector: 'a[href*="job-detail"], a.srp-title', urlCheck: 'job-detail' },
+  Shine:      { selector: 'a[href*="/job/"], h2.job-title a', urlCheck: '/job/' },
+  Hirist:     { selector: 'a[href*="/jobs/"]', urlCheck: '/jobs/' },
+};
+
+const TECH_KEYWORDS = [
+  'engineer', 'developer', 'manager', 'lead', 'designer', 'architect',
+  'data', 'ai', 'machine learning', 'frontend', 'backend', 'full stack',
+  'react', 'node', 'python', 'software', 'tech', 'associate', 'analyst',
+  'devops', 'cloud', 'mobile', 'android', 'ios', 'qa', 'sre', 'platform'
+];
+
+const NAV_NOISE = ['skip to', 'sign in', 'login', 'apply', 'register', 'sign up', 'forgot password'];
+
+function buildSearchUrl(portal) {
+  const query = portal.searchQuery || 'Software Engineer';
+  const location = portal.location || 'India';
+
+  if (portal.name.includes('Naukri')) {
+    return `https://www.naukri.com/${query.replace(/ /g, '-').toLowerCase()}-jobs?k=${encodeURIComponent(query)}&l=${encodeURIComponent(location)}`;
+  }
+  if (portal.name.includes('Instahyre')) {
+    return 'https://www.instahyre.com/search-jobs/';
+  }
+  if (portal.name.includes('LinkedIn')) {
+    return `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}&f_TPR=r86400`;
+  }
+  if (portal.name.includes('Wellfound')) {
+    return `https://wellfound.com/jobs?q=${encodeURIComponent(query)}&l=${encodeURIComponent(location)}`;
+  }
+  if (portal.name.includes('Indeed')) {
+    return `https://in.indeed.com/jobs?q=${encodeURIComponent(query)}&l=${encodeURIComponent(location)}`;
+  }
+  if (portal.name.includes('TimesJobs')) {
+    return `https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&sequence=0&txtKeywords=${encodeURIComponent(query)}`;
+  }
+  if (portal.name.includes('Shine')) {
+    return `https://www.shine.com/job-search/${query.replace(/ /g, '-').toLowerCase()}-jobs/`;
+  }
+  if (portal.name.includes('Hirist')) {
+    return `https://www.hirist.tech/search?query=${encodeURIComponent(query)}`;
+  }
+  return portal.url;
+}
+
+function getSelector(portalName) {
+  for (const key of Object.keys(PORTAL_SELECTORS)) {
+    if (portalName.includes(key)) return PORTAL_SELECTORS[key];
+  }
+  return { selector: 'a', urlCheck: null };
+}
+
 export async function scanPortals(portals, logCallback) {
   const log = (msg) => {
     if (logCallback) logCallback(msg);
@@ -8,138 +66,83 @@ export async function scanPortals(portals, logCallback) {
 
   const jobs = [];
   log("Starting Playwright scanner...");
-  
-  // Launching in non-headless mode (visible browser) significantly improves bypass rates 
-  // against Cloudflare/Akamai bot detection on Indian portals like Naukri and LinkedIn.
+
+  // Non-headless mode significantly improves Cloudflare/Akamai bypass rates on Indian portals.
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    locale: 'en-IN',
+    timezoneId: 'Asia/Kolkata'
   });
 
   for (const portal of portals) {
     log(`Scanning ${portal.name}...`);
     try {
       const page = await context.newPage();
-      
-      // Construct proper search URL based on portal
-      let searchUrl = portal.url;
+      const searchUrl = buildSearchUrl(portal);
+      const { selector, urlCheck } = getSelector(portal.name);
       const query = portal.searchQuery || 'Software Engineer';
-      
-      if (portal.name.includes('Naukri')) {
-        searchUrl = `https://www.naukri.com/${query.replace(/ /g, '-')}-jobs`;
-      } else if (portal.name.includes('Instahyre')) {
-        searchUrl = `https://www.instahyre.com/search-jobs/`; // Requires auth typically, but we'll try
-      } else if (portal.name.includes('LinkedIn')) {
-        searchUrl = `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(query)}&location=${encodeURIComponent(portal.location || 'India')}`;
-      } else if (portal.name.includes('Wellfound')) {
-        searchUrl = `https://wellfound.com/role/software-engineer`;
-      }
+      const searchWords = query.toLowerCase().split(' ').filter(w => w.length > 2);
 
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      // Wait a bit for JS frameworks/bot checks to render
-      await page.waitForTimeout(5000);
-      
-      // Portal-specific high-accuracy selectors for Indian job sites
-      let selector = 'a';
-      if (portal.name.includes('Naukri')) {
-        // Naukri uses 'a.title' or specific listing classes
-        selector = 'a.title, a[href*="job-listings"]';
-      } else if (portal.name.includes('Instahyre')) {
-        selector = 'a[href*="/job/"]';
-      } else if (portal.name.includes('LinkedIn')) {
-        selector = 'a.base-card__full-link, a[href*="/jobs/view/"]';
-      } else if (portal.name.includes('Wellfound')) {
-        selector = 'a[href*="/jobs/"]';
-      }
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForTimeout(3500);
 
-      // Extract listings using targeted selectors first, fallback to generic links
       const listings = await page.$$eval(selector, (elements) => {
         return elements
           .filter(el => el.innerText && el.innerText.trim().length > 3)
           .map(el => {
-            // Find parent container to grab a broader description snippet if possible
-            let container = el.closest('.srp-jobtuple-wrapper, .job-card-container, .base-card, .job-tuple');
-            let snippet = container ? container.innerText.trim() : el.innerText.trim();
-            return {
-              title: el.innerText.trim(),
-              href: el.href,
-              snippet: snippet
-            };
+            const container = el.closest('.srp-jobtuple-wrapper, .job-card-container, .base-card, .job-tuple, .job-container, .jobTuple');
+            const snippet = container ? container.innerText.trim() : el.innerText.trim();
+            return { title: el.innerText.trim(), href: el.href, snippet };
           });
       });
-      
-      const techKeywords = ['engineer', 'developer', 'manager', 'lead', 'designer', 'architect', 'data', 'ai', 'machine learning', 'frontend', 'backend', 'full stack', 'react', 'node', 'python', 'software', 'tech', 'associate'];
-      const searchWords = query.toLowerCase().split(' ');
-      
+
       let portalJobs = listings.filter(job => {
         const text = job.title.toLowerCase();
-        // Skip basic navigation noise
-        if (text.includes('skip to') || text.includes('sign in') || text.includes('login') || text.includes('apply') || text.includes('register')) return false;
-        
-        // If we used a highly specific URL selector (like job-listings), trust it more
-        if (job.href.includes('job-listings') || job.href.includes('/job/') || job.href.includes('/jobs/view/')) {
-          return true;
-        }
-
-        const matchesTech = techKeywords.some(kw => text.includes(kw));
-        const matchesQuery = searchWords.some(sw => text.includes(sw));
-        return matchesTech || matchesQuery;
+        if (NAV_NOISE.some(n => text.includes(n))) return false;
+        if (urlCheck && job.href.includes(urlCheck)) return true;
+        return TECH_KEYWORDS.some(kw => text.includes(kw)) || searchWords.some(sw => text.includes(sw));
       });
 
-      // Deduplicate by title/URL
-      const uniqueTitles = new Set();
+      // Deduplicate by title
+      const seen = new Set();
       portalJobs = portalJobs.filter(job => {
         const cleanTitle = job.title.split('\n')[0].trim();
-        if (uniqueTitles.has(cleanTitle) || cleanTitle.length < 4) return false;
-        uniqueTitles.add(cleanTitle);
+        if (seen.has(cleanTitle) || cleanTitle.length < 4) return false;
+        seen.add(cleanTitle);
         job.cleanTitle = cleanTitle;
         return true;
       });
 
-      // Take up to 3 jobs per portal
-      portalJobs.slice(0, 3).forEach((job, idx) => {
-        const topIndianComps = ["Razorpay", "Zomato", "Cred", "Swiggy", "PhonePe"];
-        let company = topIndianComps[idx % topIndianComps.length];
+      // Up to 5 real listings per portal
+      portalJobs.slice(0, 5).forEach(job => {
+        let company = 'Unknown Company';
         if (job.cleanTitle.includes(' at ')) {
           company = job.cleanTitle.split(' at ')[1].trim();
         } else if (job.snippet.includes('\n')) {
           const lines = job.snippet.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-          if (lines.length > 1 && !lines[1].toLowerCase().includes('engineer')) {
+          if (lines.length > 1 && !lines[1].toLowerCase().includes('engineer') && !lines[1].toLowerCase().includes('developer')) {
             company = lines[1];
           }
         }
         jobs.push({
           title: `${job.cleanTitle} at ${company} - ${portal.name}`,
-          company: company,
-          description: `Company: ${company}\nExtracted Snippet:\n${job.snippet.substring(0, 500)}\n\nURL: ${job.href}`,
+          company,
+          description: `Company: ${company}\nExtracted Snippet:\n${job.snippet.substring(0, 600)}\n\nURL: ${job.href}`,
           portal: portal.name,
           url: job.href
         });
       });
-      
-      // If bot protection still fully blocked scraping, push a dynamic fallback so the portal is usable
+
       if (portalJobs.length === 0) {
-        log(`⚠️ Bot protection active on ${portal.name}. Injecting real-time simulated listing...`);
-        const q = portal.searchQuery || 'Software Engineer';
-        const fallbackComps = {
-          'Naukri': 'Razorpay',
-          'LinkedIn': 'Zomato',
-          'Instahyre': 'Cred',
-          'Wellfound': 'Swiggy'
-        };
-        const comp = fallbackComps[portal.name] || 'Flipkart';
-        jobs.push({
-          title: `Senior ${q} at ${comp} - Premium Client (${portal.name})`,
-          company: comp,
-          description: `Company: ${comp}\nSimulated Listing due to Cloudflare Bot Wall.\nRole requires expertise in scaling systems, ${q} pipelines, and working with cross-functional Indian engineering teams.\n\nURL: ${portal.url}`,
-          portal: portal.name,
-          url: portal.url
-        });
+        log(`⚠️ ${portal.name}: Bot protection active or no results found. Visit manually: ${searchUrl}`);
+      } else {
+        log(`✅ ${portal.name}: Found ${Math.min(portalJobs.length, 5)} listings.`);
       }
-      
+
       await page.close();
     } catch (error) {
-      log(`Failed to scan ${portal.name}: ${error.message}`);
+      log(`❌ Failed to scan ${portal.name}: ${error.message}`);
     }
   }
 

@@ -1,11 +1,11 @@
 # ⚡ Jobs-A2Z — Agentic Platform to Find the Right Jobs
 
-> An enterprise-grade, agentic AI platform that finds, evaluates, and applies to the right jobs for you — powered by a **pluggable AI brain** (Gemini · OpenAI · Groq · Ollama) and **multi-provider SMTP dispatch** (Gmail · Outlook · Yahoo · SendGrid · Mailgun · Zoho).
+> An enterprise-grade, agentic AI platform that finds, evaluates, and applies to the right jobs for you — powered by a **pluggable AI brain** (Groq · Gemini · OpenAI · Claude · Ollama) and **multi-provider SMTP dispatch** (Gmail · Outlook · Yahoo · SendGrid · Mailgun · Zoho).
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA%203-FF6B35)](https://console.groq.com/)
 [![Gemini](https://img.shields.io/badge/Gemini-REST%20%2F%20CLI-blue?logo=google)](https://aistudio.google.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai)](https://platform.openai.com/)
-[![Groq](https://img.shields.io/badge/Groq-LLaMA%203-FF6B35)](https://console.groq.com/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black)](https://ollama.com/)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium-orange?logo=playwright)](https://playwright.dev/)
 [![License](https://img.shields.io/github/license/swapwarick/Jobs-A2Z)](LICENSE)
@@ -14,43 +14,46 @@
 
 ## 🌟 What is Jobs-A2Z?
 
-**Jobs-A2Z** is a fully autonomous, terminal-based career operations platform built specifically for the **Indian tech job market**. Instead of manually browsing Naukri, LinkedIn, Instahyre, and Wellfound every day — this agent does it all for you in a single keystroke.
+**Jobs-A2Z** is a fully autonomous, terminal-based career operations platform built specifically for the **Indian tech job market**. Instead of manually browsing job sites every day — this agent does it all for you in a single keystroke.
 
-It scrapes live listings, evaluates each role against your CV, drafts ATS-optimized tailored resumes, discovers recruiter contacts, writes hyper-personalized cold emails, and dispatches them — all from a sleek TUI dashboard. The AI brain and email dispatch are fully **pluggable**: use Google Gemini, OpenAI GPT-4o, Groq's free LLaMA 3, or even a fully offline local Ollama model. Send emails over Gmail, Outlook, Yahoo, SendGrid, Mailgun, Zoho, or any custom SMTP server.
+It scrapes live listings from **8 Indian job portals**, evaluates each role against your CV, drafts ATS-optimized tailored resumes, discovers recruiter contacts, writes hyper-personalized cold emails, and dispatches them — all from a sleek TUI dashboard.
+
+The AI brain and email dispatch are fully **pluggable**: use Groq's free LLaMA 3 (recommended), Google Gemini, OpenAI GPT-4o, Anthropic Claude, or even a fully offline local Ollama model. Send emails over Gmail, Outlook, Yahoo, SendGrid, Mailgun, Zoho, or any custom SMTP server.
 
 ---
 
 ## 🧠 Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────┐
-│          Onboarding Setup (CLI Prompts)          │
-│  Name → Designation → CV → Auth → Target Role   │
-└───────────────────┬─────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────────┐
-│         Playwright Web Scraper Engine            │
-│  Naukri · LinkedIn · Instahyre · Wellfound       │
-└───────────────────┬─────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────────┐
-│       Blessed TUI Master Dashboard               │
-│  Jobs Pipeline · Eval · Resume · Logs tabs       │
-└───────────────────┬─────────────────────────────┘
-                    │
-         ┌──────────┼──────────┐
-         ▼          ▼          ▼
-    [Enter]        [R]        [P]
-  Gemini Eval   AI Resume   ATS PDF
-                            Export
-                    │
-              ┌─────┴──────┐
-              ▼            ▼
-             [C]          [A]
-        Contact +     Full Auto-Pilot
-        Cold Email    (All steps at once)
+┌─────────────────────────────────────────────────────┐
+│           Onboarding Setup (CLI Prompts)             │
+│   Name → Designation → CV → Auth → Target Role      │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│          Playwright Web Scraper Engine               │
+│  Naukri · LinkedIn · Indeed · Instahyre · Wellfound  │
+│  TimesJobs · Shine · Hirist  (8 portals)            │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│         Blessed TUI Master Dashboard                 │
+│   Jobs Pipeline · Eval · Resume · Logs tabs          │
+└─────────────────────┬───────────────────────────────┘
+                      │
+           ┌──────────┼──────────┐
+           ▼          ▼          ▼
+      [Enter]        [R]        [P]
+    AI Eval      AI Resume   ATS PDF
+                              Export
+                      │
+                ┌─────┴──────┐
+                ▼            ▼
+               [C]          [A]
+          Contact +     Full Auto-Pilot
+          Cold Email    (All steps at once)
 ```
 
 ---
@@ -59,27 +62,26 @@ It scrapes live listings, evaluates each role against your CV, drafts ATS-optimi
 
 | Feature | Description |
 |---|---|
-| 🔍 **Live Job Scraping** | Playwright Chromium bypasses bot protection and scrapes real listings from Naukri, LinkedIn India, Instahyre, and Wellfound |
-| 🧠 **Multi-Provider AI Brain** | Pluggable AI router: Gemini REST, OpenAI GPT-4o, Groq LLaMA 3 (free), Ollama (local), or Gemini CLI — auto-fallback chain |
+| 🔍 **Live Job Scraping** | Playwright Chromium scrapes real listings from 8 Indian portals — Naukri, LinkedIn, Indeed, Instahyre, Wellfound, TimesJobs, Shine, Hirist |
+| 🧠 **Multi-Provider AI Brain** | Pluggable AI router: Groq LLaMA 3 (free, default) → Gemini → OpenAI → Claude → Ollama → Gemini CLI fallback chain |
 | ✍️ **Tailored Resume Drafting** | AI generates a fully customized resume for each specific job description |
 | 📄 **ATS-Optimized PDF Export** | Headless Chromium renders your resume into a professional, parser-friendly PDF |
-| 🎯 **Recruiter Contact Discovery** | Hunter.io / Apollo.io APIs + algorithmic fallback to find real hiring manager emails |
-| ✉️ **Multi-Provider Email Dispatch** | Gmail, Outlook, Yahoo, SendGrid, Mailgun, Zoho, or custom SMTP — automatically selects from `.env` config |
+| 🎯 **Recruiter Contact Discovery** | Hunter.io / Apollo.io APIs + algorithmic fallback to find hiring manager emails |
+| ✉️ **Multi-Provider Email Dispatch** | Gmail, Outlook, Yahoo, SendGrid, Mailgun, Zoho, or custom SMTP — auto-selected from `.env` |
 | 🤖 **Full Auto-Pilot Arc** | One key `[A]` executes the entire pipeline end-to-end autonomously |
-| 🔬 **Glass-Box Observability** | Real-time logs tab streams all agent events, cache hits, and scraper progress |
+| 🌐 **Open in Browser** | Press `[O]` to open any job listing URL directly in your default browser |
+| ♻️ **Smart Deduplication** | Auto-scans skip already-seen listings so you only see fresh opportunities every run |
+| 🔬 **Glass-Box Observability** | Real-time Logs tab streams all agent events, cache hits, and scraper progress |
 | 💾 **Agent Diaries Caching** | LLM results are cached locally to avoid redundant API calls and reduce cost |
 
 ---
 
 ## 📋 Prerequisites
 
-Before installing, ensure you have the following:
-
 - **Node.js** v18 or higher — [Download](https://nodejs.org/)
 - **npm** (comes with Node.js)
-- **At least one AI provider key** (Gemini, OpenAI, Groq — or run Ollama locally for free)
-- **An email account** for outreach dispatch (Gmail, Outlook, Yahoo, SendGrid, etc.)
-- **Git** installed and configured
+- **At least one AI provider key** — Groq is free and recommended ([get a key in 30 seconds](https://console.groq.com/keys))
+- **An email account** for outreach dispatch (optional — emails spool locally if not configured)
 
 ---
 
@@ -98,7 +100,7 @@ cd Jobs-A2Z
 npm install
 ```
 
-### 3. Install Playwright Chromium Browser
+### 3. Install Playwright Chromium
 
 ```bash
 npx playwright install chromium
@@ -106,9 +108,9 @@ npx playwright install chromium
 
 ### 4. Create your CV Profile
 
-Create a file named `cv.md` in the project root and paste your resume/profile in Markdown format:
+Create `cv.md` in the project root with your resume in Markdown format:
 
-```bash
+```markdown
 # Your Full Name
 ## Professional Summary
 5+ years of experience in...
@@ -120,15 +122,19 @@ Create a file named `cv.md` in the project root and paste your resume/profile in
 ...
 ```
 
-> This file is gitignored and stays 100% local to your machine.
+> `cv.md` is gitignored and stays 100% local to your machine.
 
 ### 5. Configure Environment Variables
 
-Create a `.env` file in the project root. Only fill in the providers you want to use — everything else will auto-fallback:
+Create a `.env` file. Only fill in the providers you want — everything else auto-falls back:
 
 ```env
-# ── AI PROVIDER (auto | gemini | openai | groq | ollama) ──────────
+# ── AI PROVIDER (auto | groq | gemini | openai | claude | ollama) ──
 AI_PROVIDER=auto
+
+# Groq (FREE tier, ultra-fast) — https://console.groq.com/keys
+GROQ_API_KEY=your_groq_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
 
 # Google Gemini REST API — https://aistudio.google.com/app/apikey
 GEMINI_API_KEY=
@@ -138,20 +144,16 @@ GEMINI_MODEL=gemini-2.0-flash
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 
-# Groq (FREE tier, ultra-fast) — https://console.groq.com/keys
-GROQ_API_KEY=
-GROQ_MODEL=llama-3.3-70b-versatile
-
 # Ollama (local, offline, free) — https://ollama.com
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama3
 
-# ── EMAIL DISPATCH (gmail | outlook | yahoo | sendgrid | zoho | custom)
+# ── EMAIL DISPATCH ─────────────────────────────────────────────────
 SMTP_PROVIDER=gmail
 SMTP_USER=your.email@gmail.com
 SMTP_PASS=your16charapppassword
 
-# ── CONTACT DISCOVERY (optional)
+# ── CONTACT DISCOVERY (optional) ───────────────────────────────────
 HUNTER_API_KEY=
 APOLLO_API_KEY=
 ```
@@ -161,10 +163,10 @@ APOLLO_API_KEY=
 ## ▶️ Running the Application
 
 ```bash
-node index.js
+npm start
 ```
 
-You will be walked through a **5-step onboarding setup**:
+You will be walked through a **4-step onboarding setup**:
 
 ```
 ================================================================
@@ -176,38 +178,37 @@ You will be walked through a **5-step onboarding setup**:
 📄 Base Profile loaded from ./cv.md (4316 characters)
 ✍️  Append specific focus/skills to resume? (Leave blank to keep base CV):
 
-🔐 Initializing Google Gemini Agentic Cloud Authentication...
-✅ Verified local OAuth / Environment Key access for Gemini.
+✅ AI provider credentials verified.
 
 🎯 Target Scrape Arc Pipeline Configuration
 🔍 Enter specific Job Role to hunt: Senior MLOps Engineer
 
-✅ Configured live scrapers on 4 regional portals targeting: "Senior MLOps Engineer"
-🚀 Launching visual Master TUI Dashboard in 2 seconds...
+✅ Configured live scrapers on 8 regional portals targeting: "Senior MLOps Engineer"
+🚀 Launching Master TUI Dashboard in 2 seconds...
 ```
 
 ---
 
 ## 🎮 Dashboard Controls
 
-Once the TUI dashboard loads, use these keyboard shortcuts:
-
 | Key | Action |
 |---|---|
-| `↑` / `↓` | Navigate the jobs list (left panel) |
+| `↑` / `↓` | Navigate the jobs list |
 | `←` / `→` | Switch focus between Jobs list and Workspace panel |
 | `Tab` | Toggle panel focus |
-| `Enter` | **Evaluate** selected job via Gemini AI |
+| `Enter` | **Evaluate** selected job via AI |
 | `R` | **Draft tailored resume** for selected job |
 | `P` | **Export ATS-optimized PDF** of the tailored resume |
+| `O` | **Open job URL** in your default browser |
 | `C` | **Discover recruiter contact** and draft + send cold email |
-| `A` | **Full Auto-Pilot Arc** — runs all steps end-to-end autonomously |
+| `A` | **Full Auto-Pilot Arc** — runs all steps end-to-end |
 | `S` | **Rescan** all portals for fresh listings |
-| `1` | Switch to Evaluation tab |
-| `2` | Switch to Tailored Resume tab |
-| `3` | Switch to Base CV tab |
-| `4` | Switch to Logs tab |
-| `Q` / `Esc` | Exit the dashboard |
+| `N` | **Change target role** on-the-fly without restarting |
+| `1` | Evaluation tab |
+| `2` | Tailored Resume tab |
+| `3` | Base CV tab |
+| `4` | Logs tab |
+| `Q` / `Esc` | Exit |
 
 ---
 
@@ -217,15 +218,15 @@ Pressing `[A]` on any job listing triggers the complete end-to-end pipeline:
 
 ```
 Phase 1: 🧠 AI evaluates job vs. your CV (gap analysis + match score)
-           └─ Uses: Gemini → OpenAI → Groq → Ollama → Gemini CLI
+           └─ Uses: Groq → Gemini → OpenAI → Claude → Ollama → Gemini CLI
 Phase 2: ✍️  AI drafts a customized tailored resume for this exact role
 Phase 3: 📄 Headless Chromium renders a clean ATS-optimized PDF
 Phase 4: 🎯 Hunter/Apollo (or smart fallback) resolves recruiter email
 Phase 5: ✉️  AI writes cold outreach email
-Phase 6: ✉️  Dispatches via configured SMTP provider (or spools to ./outbox/)
+Phase 6: 📤 Dispatches via configured SMTP (or spools to ./outbox/)
 ```
 
-If SMTP credentials are not configured, the email payload is safely **spooled locally** to the `./outbox/` directory.
+If SMTP credentials are not configured, the email payload is safely **spooled locally** to `./outbox/`.
 
 ---
 
@@ -233,21 +234,18 @@ If SMTP credentials are not configured, the email payload is safely **spooled lo
 
 ### 🧠 AI Brain Providers
 
-Set `AI_PROVIDER=` in your `.env` to force a specific provider, or leave as `auto` to use the automatic fallback chain:
-
 | Provider | `AI_PROVIDER` value | Speed | Cost | Requires |
 |---|---|---|---|---|
+| **Groq LLaMA 3** | `groq` | 🚀 Fastest | **Free tier** | `GROQ_API_KEY` |
 | **Gemini REST API** | `gemini` | ⚡ Fast | Free / Pay-as-go | `GEMINI_API_KEY` |
 | **OpenAI GPT-4o** | `openai` | ⚡ Fast | Paid | `OPENAI_API_KEY` |
-| **Groq LLaMA 3** | `groq` | 🚀 Fastest | **Free tier** | `GROQ_API_KEY` |
+| **Anthropic Claude** | `claude` | ⚡ Fast | Paid | `ANTHROPIC_API_KEY` + `npm i @anthropic-ai/sdk` |
 | **Ollama (Local)** | `ollama` | Moderate | **100% Free** | Local install |
 | **Gemini CLI** | *(fallback)* | Slow | Free | OAuth session |
 
-> 💡 **Groq is the recommended free option** — get your key in 30 seconds at [console.groq.com](https://console.groq.com/keys) with Google login. No credit card required.
+> 💡 **Groq is the recommended default** — get your key in 30 seconds at [console.groq.com](https://console.groq.com/keys). No credit card required.
 
 ### ✉️ Email (SMTP) Providers
-
-Set `SMTP_PROVIDER=` in your `.env` — no other host/port config needed:
 
 | Provider | `SMTP_PROVIDER` value | Notes |
 |---|---|---|
@@ -260,7 +258,7 @@ Set `SMTP_PROVIDER=` in your `.env` — no other host/port config needed:
 | **Office 365** | `office365` | Microsoft 365 Business accounts |
 | **Custom SMTP** | `custom` | Also set `SMTP_HOST` and `SMTP_PORT` |
 
-> 💡 If no SMTP is configured, all outreach emails are safely saved to `./outbox/` as text files for manual review.
+> 💡 If no SMTP is configured, all emails are saved to `./outbox/` as text files for manual review.
 
 ---
 
@@ -289,6 +287,7 @@ The following files are **permanently gitignored** and will **never be committed
 - `*.pdf` — All generated ATS resume documents
 - `outbox/` — Local email spool records
 - `.agent-diaries/` — Local AI response cache
+- `user-profile.json` — Saved onboarding profile
 
 ---
 
@@ -297,18 +296,18 @@ The following files are **permanently gitignored** and will **never be committed
 | Layer | Technology |
 |---|---|
 | **Terminal UI** | [Blessed](https://github.com/chjj/blessed) + [Blessed-Contrib](https://github.com/yaronn/blessed-contrib) |
-| **Web Scraping** | [Playwright](https://playwright.dev/) (Chromium) |
-| **AI Brain** | [Gemini REST](https://ai.google.dev/) · [OpenAI SDK](https://github.com/openai/openai-node) · [Groq SDK](https://console.groq.com/) · [Ollama](https://ollama.com/) · [Gemini CLI](https://github.com/google-gemini/gemini-cli) |
+| **Web Scraping** | [Playwright](https://playwright.dev/) (Chromium, locale: en-IN) |
+| **AI Brain** | [Groq SDK](https://console.groq.com/) · [Gemini REST](https://ai.google.dev/) · [OpenAI SDK](https://github.com/openai/openai-node) · [Ollama](https://ollama.com/) · [Gemini CLI](https://github.com/google-gemini/gemini-cli) |
 | **PDF Generation** | Playwright headless + [Marked](https://marked.js.org/) (Markdown → HTML → PDF) |
 | **Email Dispatch** | [Nodemailer](https://nodemailer.com/) — Gmail · Outlook · Yahoo · SendGrid · Mailgun · Zoho · Custom |
-| **LLM Caching** | [Agent-Diaries](https://www.npmjs.com/package/agent-diaries) SDK |
+| **LLM Caching** | [@swapwarick_n/agent-diaries](https://www.npmjs.com/package/@swapwarick_n/agent-diaries) |
 | **Config** | YAML (`portals.yml`) + dotenv (`.env`) |
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+Pull requests are welcome! For major changes, please open an issue first.
 
 1. Fork the repository
 2. Create your feature branch: `git checkout -b feature/amazing-feature`
