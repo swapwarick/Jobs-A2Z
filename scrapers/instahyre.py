@@ -1,5 +1,7 @@
 import os
 from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth_sync
+from playwright.sync_api import sync_playwright
 
 def scrape_instahyre(url: str) -> str:
     """Scrapes an Instahyre job URL and returns a structured markdown representation."""
@@ -13,6 +15,7 @@ def scrape_instahyre(url: str) -> str:
             ignore_default_args=["--enable-automation"]
         )
         page = context.pages[0] if context.pages else context.new_page()
+        stealth_sync(page)
             
         try:
             page.goto(url, wait_until="networkidle", timeout=30000)
