@@ -69,17 +69,29 @@ def auto_apply_naukri(url: str) -> str:
             
             page.goto(url, wait_until="networkidle", timeout=30000)
             
-            # Look for the Apply button
-            apply_btn = page.locator("button:has-text('Apply')").first
+            import re
             
-            if apply_btn.count() > 0:
+            try:
+                # Look for the Apply button and wait for it to appear
+                apply_btn = page.get_by_role("button", name=re.compile(r"^(Apply|Apply Now)$", re.IGNORECASE)).first
+                apply_btn.wait_for(timeout=10000)
+            except:
+                # Fallback to ID or class if role fails
+                apply_btn = page.locator("#apply-button, .apply-button, button:has-text('Apply')").first
+                try:
+                    apply_btn.wait_for(timeout=5000)
+                except:
+                    pass
+            
+            if apply_btn.is_visible():
                 apply_text = apply_btn.inner_text().lower()
                 if "company website" in apply_text:
                     result = "Redirect: This job requires applying on the external company website."
                 else:
-                    apply_btn.click()
+                    apply_btn.click(force=True)
                     try:
-                        page.wait_for_selector(".apply-message, .msg-text", timeout=5000)
+                        # Wait for either the success banner, or for the Apply button to change its text to "Applied"
+                        page.wait_for_selector(".apply-message, .msg-text, text='Applied', text='Successfully', text='successfully'", timeout=8000)
                         result = "Success: Application submitted successfully!"
                     except:
                         result = "Partial Success: Apply button clicked, but confirmation message not detected."
