@@ -1,8 +1,7 @@
 import os
 import yaml
 import time
-from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+from playwright_stealth import Stealth
 from playwright.sync_api import sync_playwright
 
 def load_profile():
@@ -28,7 +27,7 @@ def scan_naukri(role: str, location: str):
                 ignore_default_args=["--enable-automation"]
             )
             page = context.pages[0] if context.pages else context.new_page()
-            stealth_sync(page)
+            Stealth().apply_stealth_sync(page)
                 
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
@@ -78,7 +77,7 @@ def scan_instahyre(role: str):
                 ignore_default_args=["--enable-automation"]
             )
             page = context.pages[0] if context.pages else context.new_page()
-            stealth_sync(page)
+            Stealth().apply_stealth_sync(page)
                 
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
