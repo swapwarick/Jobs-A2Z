@@ -68,33 +68,36 @@ def auto_apply_naukri(url: str) -> str:
             Stealth().apply_stealth_sync(page)
             
             page.goto(url, wait_until="networkidle", timeout=30000)
+            # We'll use vanilla JS to find and click the exact Apply button to bypass Playwright's strict visibility/actionability checks
+            page.wait_for_timeout(3000) # Give the page 3 seconds to fully hydrate the buttons
             
-            import re
+            click_result = page.evaluate("""() => {
+                let elements = Array.from(document.querySelectorAll('button, a, div.apply-button, div#apply-button'));
+                let applyBtn = elements.find(el => {
+                    let text = (el.innerText || "").trim().toLowerCase();
+                    return text === 'apply' || text === 'apply now';
+                });
+                
+                if (applyBtn) {
+                    // Check if it's an external company website redirect
+                    if (applyBtn.innerText.toLowerCase().includes("company website")) {
+                        return "redirect";
+                    }
+                    applyBtn.click();
+                    return "clicked";
+                }
+                return "not_found";
+            }""")
             
-            try:
-                # Look for the Apply button and wait for it to appear
-                apply_btn = page.get_by_role("button", name=re.compile(r"^(Apply|Apply Now)$", re.IGNORECASE)).first
-                apply_btn.wait_for(timeout=10000)
-            except:
-                # Fallback to ID or class if role fails
-                apply_btn = page.locator("#apply-button, .apply-button, button:has-text('Apply')").first
+            if click_result == "redirect":
+                result = "Redirect: This job requires applying on the external company website."
+            elif click_result == "clicked":
                 try:
-                    apply_btn.wait_for(timeout=5000)
+                    # Wait for either the success banner, or for the Apply button to change its text to "Applied"
+                    page.wait_for_selector(".apply-message, .msg-text, text='Applied', text='Successfully', text='successfully'", timeout=8000)
+                    result = "Success: Application submitted successfully!"
                 except:
-                    pass
-            
-            if apply_btn.is_visible():
-                apply_text = apply_btn.inner_text().lower()
-                if "company website" in apply_text:
-                    result = "Redirect: This job requires applying on the external company website."
-                else:
-                    apply_btn.click(force=True)
-                    try:
-                        # Wait for either the success banner, or for the Apply button to change its text to "Applied"
-                        page.wait_for_selector(".apply-message, .msg-text, text='Applied', text='Successfully', text='successfully'", timeout=8000)
-                        result = "Success: Application submitted successfully!"
-                    except:
-                        result = "Partial Success: Apply button clicked, but confirmation message not detected."
+                    result = "Partial Success: Apply button clicked, but confirmation message not detected."
             else:
                 result = "Failed: Apply button not found. You may have already applied, or the layout changed."
                 
