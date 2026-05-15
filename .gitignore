@@ -1,0 +1,22 @@
+# Environment variables
+.env
+
+# Python caching
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+
+# Personal CV
+cv.personal.md
+
+# Tailored resumes directory
+tailored_resumes/
+
+# Job Descriptions cache
+jds/
+
+# Test files
+test_*.py

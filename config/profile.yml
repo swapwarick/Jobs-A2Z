@@ -1,0 +1,26 @@
+# config/profile.yml
+# Jobs-A2Z User Profile Preferences
+
+name: "Hitesh"
+target_roles:
+  - "Software Engineer"
+  - "Backend Developer"
+  - "Full Stack Developer"
+target_locations:
+  - "Bangalore"
+  - "Pune"
+  - "Hyderabad"
+  - "Remote (India)"
+
+preferences:
+  expected_ctc_lpa: 15-25 # In Lakhs Per Annum
+  notice_period_days: 30
+  preferred_work_mode: "Hybrid" # Remote, On-site, Hybrid
+
+experience_level: "Mid-Level" # Entry-Level, Mid-Level, Senior
+tech_stack:
+  - "Python"
+  - "JavaScript"
+  - "Go"
+  - "React"
+  - "Node.js"
