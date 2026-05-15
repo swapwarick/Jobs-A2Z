@@ -9,7 +9,8 @@ def scrape_instahyre(url: str) -> str:
             user_data_dir=profile_dir,
             headless=False,
             channel="chrome",
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            args=["--disable-blink-features=AutomationControlled"],
+            ignore_default_args=["--enable-automation"]
         )
         page = context.pages[0] if context.pages else context.new_page()
             
