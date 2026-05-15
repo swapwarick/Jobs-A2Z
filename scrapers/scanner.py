@@ -112,6 +112,59 @@ def scan_instahyre(role: str):
         print(f"Instahyre scan failed: {e}")
     return jobs
 
+def scan_linkedin(role: str, location: str):
+    """Searches LinkedIn for jobs in India."""
+    import urllib.parse
+    role_url = urllib.parse.quote(role)
+    loc_url = urllib.parse.quote(location)
+    url = f"https://www.linkedin.com/jobs/search/?keywords={role_url}&location={loc_url}"
+    
+    jobs = []
+    try:
+        with sync_playwright() as p:
+            profile_dir = os.path.abspath("agent_profile")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                headless=False,
+                channel="chrome",
+                args=["--disable-blink-features=AutomationControlled"],
+                ignore_default_args=["--enable-automation"]
+            )
+            page = context.pages[0] if context.pages else context.new_page()
+            Stealth().apply_stealth_sync(page)
+                
+            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(3000)
+            
+            job_cards = page.locator("li.jobs-search-results__list-item, li.job-search-card").all()
+            for card in job_cards[:5]:
+                try:
+                    title_elem = card.locator(".job-card-list__title, .base-search-card__title")
+                    title = title_elem.inner_text().strip()
+                    
+                    job_url = card.locator("a").first.get_attribute("href")
+                    if job_url and "?" in job_url:
+                        job_url = job_url.split("?")[0] # clean tracking params
+                    
+                    company = card.locator(".job-card-container__company-name, .base-search-card__subtitle").inner_text().strip()
+                    loc = card.locator(".job-card-container__metadata-item, .job-search-card__location").first.inner_text().strip()
+                    
+                    jobs.append({
+                        "portal": "LinkedIn",
+                        "title": title,
+                        "company": company,
+                        "location": loc,
+                        "url": job_url,
+                        "match_score": "Pending"
+                    })
+                except Exception as e:
+                    continue
+            if 'context' in locals():
+                context.close()
+    except Exception as e:
+        print(f"LinkedIn scan failed: {e}")
+    return jobs
+
 def run_full_scan(query: str = None):
     if query:
         # Simple extraction: if " in " is typed, split into role and location
@@ -131,6 +184,7 @@ def run_full_scan(query: str = None):
     
     all_jobs = []
     all_jobs.extend(scan_naukri(role, loc))
+    all_jobs.extend(scan_linkedin(role, loc))
     
     # Instahyre usually has an internal search, we just pass the role
     all_jobs.extend(scan_instahyre(role))

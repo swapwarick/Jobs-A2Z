@@ -144,6 +144,9 @@ class JobDashboard(App):
             elif job["portal"] == "Instahyre":
                 from scrapers.instahyre import scrape_instahyre
                 jd_markdown = scrape_instahyre(job["url"])
+            elif job["portal"] == "LinkedIn":
+                from scrapers.linkedin import scrape_linkedin
+                jd_markdown = scrape_linkedin(job["url"])
             else:
                 jd_markdown = "No scraper available for this portal."
                 
@@ -217,6 +220,9 @@ class JobDashboard(App):
             elif job["portal"] == "Instahyre":
                 from scrapers.instahyre import scrape_instahyre
                 jd_markdown = scrape_instahyre(job["url"])
+            elif job["portal"] == "LinkedIn":
+                from scrapers.linkedin import scrape_linkedin
+                jd_markdown = scrape_linkedin(job["url"])
                 
             # Read CV
             with open("cv.md", "r", encoding="utf-8") as f:
@@ -301,6 +307,9 @@ class JobDashboard(App):
             elif job["portal"] == "Instahyre":
                 from scrapers.instahyre import scrape_instahyre
                 jd_markdown = scrape_instahyre(job["url"])
+            elif job["portal"] == "LinkedIn":
+                from scrapers.linkedin import scrape_linkedin
+                jd_markdown = scrape_linkedin(job["url"])
                 
             # Read CV
             with open("cv.md", "r", encoding="utf-8") as f:
@@ -377,15 +386,16 @@ class JobDashboard(App):
             return
             
         job = self.jobs[row_index]
-        if job["portal"] != "Naukri":
-            self.app.call_from_thread(log.write_line, f"[bold yellow]Auto-apply currently only supports Naukri. Selected job is on {job['portal']}.[/bold yellow]")
+        if job["portal"] == "Naukri":
+            from scrapers.naukri import auto_apply_naukri
+            result = auto_apply_naukri(job["url"])
+        elif job["portal"] == "LinkedIn":
+            from scrapers.linkedin import auto_apply_linkedin
+            result = auto_apply_linkedin(job["url"])
+        else:
+            self.app.call_from_thread(log.write_line, f"[bold yellow]Auto-apply currently only supports Naukri and LinkedIn. Selected job is on {job['portal']}.[/bold yellow]")
             return
             
-        self.app.call_from_thread(log.write_line, f"[bold cyan]Attempting Auto-Apply for {job['title']} at {job['company']}...[/bold cyan]")
-        
-        from scrapers.naukri import auto_apply_naukri
-        result = auto_apply_naukri(job["url"])
-        
         if "Success" in result:
             self.app.call_from_thread(log.write_line, f"[bold green]{result}[/bold green]")
         else:
