@@ -336,11 +336,21 @@ class JobDashboard(App):
             
             import urllib.parse
             import webbrowser
+            import re
+            
+            # Extract HR/Manager email from the Job Description markdown
+            emails_found = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', jd_markdown)
+            target_email = emails_found[0] if emails_found else ""
+            
+            if target_email:
+                self.app.call_from_thread(log.write_line, f"[bold green]Found contact email in JD: {target_email}[/bold green]")
+            else:
+                self.app.call_from_thread(log.write_line, f"[bold yellow]No specific email found in JD. Leaving 'To' field blank.[/bold yellow]")
             
             # Create Gmail compose URL
             encoded_subject = urllib.parse.quote(subject)
             encoded_body = urllib.parse.quote(body)
-            gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to=hiring@{job['company'].lower().replace(' ', '')}.com&su={encoded_subject}&body={encoded_body}"
+            gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={target_email}&su={encoded_subject}&body={encoded_body}"
             
             webbrowser.open(gmail_url)
             
