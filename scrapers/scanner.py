@@ -17,13 +17,13 @@ def scan_naukri(role: str, location: str):
     jobs = []
     try:
         with sync_playwright() as p:
-            try:
-                browser = p.chromium.connect_over_cdp("http://localhost:9222")
-                context = browser.contexts[0]
-                page = context.new_page()
-            except Exception:
-                browser = p.chromium.launch(headless=False)
-                page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            profile_dir = os.path.abspath("agent_profile")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                headless=False,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.pages[0] if context.pages else context.new_page()
                 
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
@@ -50,7 +50,8 @@ def scan_naukri(role: str, location: str):
                     })
                 except Exception as e:
                     continue
-            browser.close()
+            if 'context' in locals():
+                context.close()
     except Exception as e:
         print(f"Naukri scan failed: {e}")
     return jobs
@@ -63,13 +64,13 @@ def scan_instahyre(role: str):
     jobs = []
     try:
         with sync_playwright() as p:
-            try:
-                browser = p.chromium.connect_over_cdp("http://localhost:9222")
-                context = browser.contexts[0]
-                page = context.new_page()
-            except Exception:
-                browser = p.chromium.launch(headless=False)
-                page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            profile_dir = os.path.abspath("agent_profile")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                headless=False,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.pages[0] if context.pages else context.new_page()
                 
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
@@ -98,7 +99,8 @@ def scan_instahyre(role: str):
                     })
                 except Exception as e:
                     continue
-            browser.close()
+            if 'context' in locals():
+                context.close()
     except Exception as e:
         print(f"Instahyre scan failed: {e}")
     return jobs

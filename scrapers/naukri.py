@@ -4,15 +4,13 @@ from playwright.sync_api import sync_playwright
 def scrape_naukri(url: str) -> str:
     """Scrapes a Naukri job URL and returns a structured markdown representation."""
     with sync_playwright() as p:
-        try:
-            browser = p.chromium.connect_over_cdp("http://localhost:9222")
-            context = browser.contexts[0]
-            page = context.new_page()
-            is_cdp = True
-        except Exception:
-            browser = p.chromium.launch(headless=False)
-            page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            is_cdp = False
+        profile_dir = os.path.abspath("agent_profile")
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            headless=False,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = context.pages[0] if context.pages else context.new_page()
             
         try:
             page.goto(url, wait_until="networkidle", timeout=30000)
@@ -47,16 +45,20 @@ def scrape_naukri(url: str) -> str:
         except Exception as e:
             return f"Failed to scrape Naukri: {e}"
         finally:
-            browser.close()
+            if 'context' in locals():
+                context.close()
 
 def auto_apply_naukri(url: str) -> str:
-    """Uses the user's running Chrome browser to automatically apply for a job on Naukri."""
+    """Uses a persistent agent profile to apply for a job automatically."""
     with sync_playwright() as p:
         try:
-            # Connect to the running Chrome instance over CDP
-            browser = p.chromium.connect_over_cdp("http://localhost:9222")
-            context = browser.contexts[0]
-            page = context.new_page()
+            profile_dir = os.path.abspath("agent_profile")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                headless=False,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.pages[0] if context.pages else context.new_page()
             
             page.goto(url, wait_until="networkidle", timeout=30000)
             
@@ -77,17 +79,10 @@ def auto_apply_naukri(url: str) -> str:
             else:
                 result = "Failed: Apply button not found. You may have already applied, or the layout changed."
                 
-            page.close()
+            context.close()
             return result
             
         except Exception as e:
-            if "TargetClosedError" in str(e) or "ECONNREFUSED" in str(e) or "connect_over_cdp" in str(e):
-                return (
-                    "CRITICAL: Chrome is not running in debug mode!\n"
-                    "To use your active PC session, you MUST start Chrome from the terminal like this:\n"
-                    "  Start-Process 'chrome.exe' -ArgumentList '--remote-debugging-port=9222'\n"
-                    "Make sure all other Chrome windows are closed before running that command."
-                )
             return f"Error during auto-apply: {e}"
 
 if __name__ == "__main__":
