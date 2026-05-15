@@ -44,6 +44,65 @@ def scrape_naukri(url: str) -> str:
         finally:
             browser.close()
 
+def auto_apply_naukri(url: str) -> str:
+    """Uses a persistent session to automatically apply for a job on Naukri."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        
+        state_file = "naukri_state.json"
+        
+        # If no saved session exists, force a manual login first.
+        if not os.path.exists(state_file):
+            context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            page = context.new_page()
+            page.goto("https://login.naukri.com/")
+            print("\n[!] PLEASE LOG IN TO NAUKRI IN THE OPEN BROWSER WINDOW.")
+            print("[!] You have 60 seconds to complete the login...")
+            
+            try:
+                # Wait for the user to log in (the user icon or homepage usually appears)
+                page.wait_for_selector(".nI-gNb-drawer__icon", timeout=60000)
+                print("[+] Login detected! Saving session state...")
+                context.storage_state(path=state_file)
+            except Exception:
+                browser.close()
+                return "Failed: Login timed out or was not completed successfully."
+        else:
+            # Load the saved session
+            context = browser.new_context(
+                storage_state=state_file,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            
+        try:
+            page.goto(url, wait_until="networkidle", timeout=30000)
+            
+            # Look for the Apply button
+            # Naukri has multiple variations: "Apply", "Apply on company website", etc.
+            apply_btn = page.locator("button:has-text('Apply')").first
+            
+            if apply_btn.count() > 0:
+                apply_text = apply_btn.inner_text().lower()
+                if "company website" in apply_text:
+                    return "Redirect: This job requires applying on the external company website."
+                
+                apply_btn.click()
+                
+                # Wait for success message or popup
+                try:
+                    page.wait_for_selector(".apply-message, .msg-text", timeout=5000)
+                    return "Success: Application submitted successfully!"
+                except:
+                    return "Partial Success: Apply button clicked, but confirmation message not detected."
+            else:
+                return "Failed: Apply button not found. You may have already applied, or the layout changed."
+                
+        except Exception as e:
+            return f"Error during auto-apply: {e}"
+        finally:
+            browser.close()
+
 if __name__ == "__main__":
     # Test execution
     print("Naukri Scraper initialized.")

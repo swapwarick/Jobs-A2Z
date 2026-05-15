@@ -42,6 +42,7 @@ class JobDashboard(App):
         Binding("e", "evaluate", "Evaluate Job", show=True),
         Binding("r", "tailor_resume", "Tailor Resume", show=True),
         Binding("c", "contact", "Cold Email", show=True),
+        Binding("a", "apply", "Auto Apply", show=True),
     ]
 
     def compose(self) -> ComposeResult:
@@ -363,6 +364,39 @@ class JobDashboard(App):
         try:
             row_index = table.cursor_row
             self.do_background_contact(row_index)
+        except Exception:
+            log = self.query_one(Log)
+            log.write_line("[bold red]Please select a job from the table first.[/bold red]")
+
+    @work(thread=True)
+    def do_background_apply(self, row_index: int) -> None:
+        log = self.query_one(Log)
+        
+        if not self.jobs or row_index >= len(self.jobs) or row_index < 0:
+            self.app.call_from_thread(log.write_line, "[bold red]Error: No job data found for this row.[/bold red]")
+            return
+            
+        job = self.jobs[row_index]
+        if job["portal"] != "Naukri":
+            self.app.call_from_thread(log.write_line, f"[bold yellow]Auto-apply currently only supports Naukri. Selected job is on {job['portal']}.[/bold yellow]")
+            return
+            
+        self.app.call_from_thread(log.write_line, f"[bold cyan]Attempting Auto-Apply for {job['title']} at {job['company']}...[/bold cyan]")
+        
+        from scrapers.naukri import auto_apply_naukri
+        result = auto_apply_naukri(job["url"])
+        
+        if "Success" in result:
+            self.app.call_from_thread(log.write_line, f"[bold green]{result}[/bold green]")
+        else:
+            self.app.call_from_thread(log.write_line, f"[bold yellow]{result}[/bold yellow]")
+
+    def action_apply(self) -> None:
+        """Called when 'a' is pressed."""
+        table = self.query_one(DataTable)
+        try:
+            row_index = table.cursor_row
+            self.do_background_apply(row_index)
         except Exception:
             log = self.query_one(Log)
             log.write_line("[bold red]Please select a job from the table first.[/bold red]")
