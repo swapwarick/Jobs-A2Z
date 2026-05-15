@@ -20,3 +20,6 @@ jds/
 
 # Test files
 test_*.py
+
+# Playwright Browser Session States (Security: Do not push cookies!)
+*_state.json
