@@ -17,8 +17,14 @@ def scan_naukri(role: str, location: str):
     jobs = []
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            try:
+                browser = p.chromium.connect_over_cdp("http://localhost:9222")
+                context = browser.contexts[0]
+                page = context.new_page()
+            except Exception:
+                browser = p.chromium.launch(headless=False)
+                page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
             # Wait for job cards to load
@@ -57,8 +63,14 @@ def scan_instahyre(role: str):
     jobs = []
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            try:
+                browser = p.chromium.connect_over_cdp("http://localhost:9222")
+                context = browser.contexts[0]
+                page = context.new_page()
+            except Exception:
+                browser = p.chromium.launch(headless=False)
+                page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
             page.wait_for_selector(".employer-block", timeout=15000)
